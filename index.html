@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptSmith - Shape Smarter Prompts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<!--
+    ================================================================================
+    ||  README: PromptSmith - Single-File Prompt Creation Tool                    ||
+    ================================================================================
+    ||                                                                            ||
+    ||  Version: 1.1 (with Prompt Library)                                        ||
+    ||  Author: AI Assistant (based on PRD)                                       ||
+    ||  License: MIT                                                              ||
+    ||                                                                            ||
+    ||  OVERVIEW:                                                                 ||
+    ||  PromptSmith is a self-contained, browser-native tool for crafting         ||
+    ||  high-quality AI prompts. It features a prompt library to help users       ||
+    ||  learn from excellent examples.                                            ||
+    ||                                                                            ||
+    ||  ARCHITECTURE:                                                             ||
+    ||  - Single File: All HTML, CSS, and JS are in this `index.html` file.       ||
+    ||  - Assets: SVGs are inlined directly into the markup. Google Fonts are     ||
+    ||    the only external dependency, loaded once.                              ||
+    ||  - CSS: Uses CSS variables, a BEM-like methodology, and is mobile-first.   ||
+    ||  - JavaScript: Encapsulated within an IIFE. It's event-driven and manages  ||
+    ||    state in a simple object, including a library of prompt templates.      ||
+    ||                                                                            ||
+    ||  USAGE:                                                                    ||
+    ||  Simply open this `index.html` file in any modern web browser. The tool    ||
+    ||  is fully functional offline. Your work is saved automatically to your     ||
+    ||  browser's local storage. Click "Templates" to explore and load examples.  ||
+    ||                                                                            ||
+    ================================================================================
+-->
+    <style>
+        /* --- 1. Global Styles & CSS Variables --- */
+        :root {
+            --bg-color: #0F111A;
+            --accent1: #00E6E6;
+            --accent2: #FF8C42;
+            --text-primary: #FFFFFF;
+            --text-secondary: #AAAAAA;
+            --glass-bg: rgba(30, 30, 45, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --font-heading: 'Poppins', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { background-color: var(--bg-color); color: var(--text-primary); font-family: var(--font-body); line-height: 1.6; overflow-x: hidden; font-size: 16px; }
+
+        /* --- 2. Utility Classes --- */
+        .hidden { display: none !important; }
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 8px 32px var(--shadow-color); }
+        
+        /* --- 3. Layout & Main Structure --- */
+        .container { width: 90%; max-width: 1400px; margin: 0 auto; }
+
+        /* --- 4. Header & Navigation --- */
+        .main-header { position: sticky; top: 0; z-index: 1000; padding: 1rem 0; transition: background-color 0.3s ease; }
+        .main-header.scrolled { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .main-nav { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; text-decoration: none; color: var(--text-primary); }
+        .logo .accent { color: var(--accent1); }
+        .nav-links { display: none; list-style: none; }
+        .nav-links li { margin: 0 1rem; }
+        .nav-links a { color: var(--text-secondary); text-decoration: none; transition: color 0.3s ease; font-weight: 500; cursor: pointer; }
+        .nav-links a:hover, .nav-links a.active { color: var(--text-primary); }
+        .hamburger { display: block; background: none; border: none; cursor: pointer; padding: 0.5rem; }
+        .hamburger-icon { color: var(--text-primary); width: 24px; height: 24px; }
+        .mobile-menu { position: fixed; top: 0; left: -100%; width: 80%; max-width: 300px; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: left 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 999; }
+        .mobile-menu.open { left: 0; }
+        .mobile-menu .nav-links { display: flex; flex-direction: column; gap: 2rem; }
+        .mobile-menu .nav-links a { font-size: 1.2rem; }
+        
+        /* --- 5. Hero Section --- */
+        #hero { text-align: center; padding: 6rem 0; animation: fadeIn 1s ease-in-out; }
+        .hero-content { max-width: 700px; margin: 0 auto; }
+        .hero-content h1 { font-family: var(--font-heading); font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1.2; margin-bottom: 1rem; }
+        .hero-content h1 .accent { color: var(--accent2); }
+        .hero-content p { font-size: clamp(1rem, 2.5vw, 1.25rem); color: var(--text-secondary); margin-bottom: 2rem; }
+        .cta-button { background: linear-gradient(90deg, var(--accent1), var(--accent2)); color: var(--bg-color); font-family: var(--font-heading); font-size: 1.1rem; font-weight: 600; padding: 1rem 2.5rem; border: none; border-radius: 50px; cursor: pointer; text-decoration: none; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .cta-button:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0, 230, 230, 0.3), 0 8px 30px rgba(255, 140, 66, 0.3); }
+        .floating-image { margin-top: 4rem; animation: float 6s ease-in-out infinite; max-width: 300px; }
+        
+        /* --- 6. Editor Section --- */
+        #editor-section { padding: 2rem 0; animation: fadeIn 0.5s ease-in-out; }
+        .editor-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+        .editor-column, .preview-column, .suggestions-column { display: flex; flex-direction: column; gap: 1.5rem; }
+        .prompt-component { padding: 1.5rem; animation: slideUpFadeIn 0.5s ease-out forwards; opacity: 0; transform: translateY(20px); }
+        .prompt-component header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .prompt-component h3 { font-family: var(--font-heading); font-size: 1.2rem; }
+        .info-button { background: none; border: none; cursor: pointer; color: var(--text-secondary); transition: color 0.3s ease; }
+        .info-button:hover { color: var(--accent1); }
+        .info-button svg { width: 20px; height: 20px; }
+        .component-input { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; padding: 0.75rem; color: var(--text-primary); font-family: var(--font-body); font-size: 1rem; resize: vertical; min-height: 100px; }
+        .component-input:focus { outline: none; border-color: var(--accent1); box-shadow: 0 0 10px rgba(0, 230, 230, 0.3); }
+        .component-actions-container { margin-top: 1rem; }
+        .component-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .component-actions button { background-color: transparent; border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; transition: all 0.3s ease; }
+        .component-actions button:hover { background-color: var(--glass-bg); color: var(--text-primary); border-color: var(--accent1); }
+        #live-preview-box pre { white-space: pre-wrap; word-wrap: break-word; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 8px; min-height: 200px; color: var(--text-secondary); font-size: 0.9rem; }
+        #live-preview-box pre strong { color: var(--accent1); font-weight: normal; }
+        .export-buttons { display: flex; gap: 1rem; margin-top: 1rem; }
+        .export-buttons button { flex-grow: 1; }
+        
+        /* --- 7. Modal (Prompt Library) --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 1001; display: flex; justify-content: center; align-items: center; animation: fadeIn 0.3s ease; }
+        .modal-content { position: relative; width: 90%; max-width: 800px; height: 80vh; padding: 2rem; display: flex; flex-direction: column; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h2 { font-family: var(--font-heading); }
+        .close-modal-btn { background: none; border: none; color: var(--text-primary); font-size: 2rem; cursor: pointer; line-height: 1; }
+        .prompt-library { overflow-y: auto; padding-right: 1rem; }
+        .prompt-library::-webkit-scrollbar { width: 8px; }
+        .prompt-library::-webkit-scrollbar-track { background: transparent; }
+        .prompt-library::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+        .prompt-card { border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; transition: border-color 0.3s ease; }
+        .prompt-card:hover { border-color: var(--accent1); }
+        .prompt-card h4 { font-family: var(--font-heading); color: var(--accent2); margin-bottom: 0.5rem; }
+        .prompt-card p { color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem; }
+        .prompt-card .use-prompt-btn { background: var(--accent1); color: var(--bg-color); font-weight: 600; padding: 0.6rem 1.2rem; border-radius: 20px; border: none; cursor: pointer; transition: background-color 0.3s ease; }
+        .prompt-card .use-prompt-btn:hover { background: var(--text-primary); }
+
+        /* --- 8. Animations --- */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUpFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        
+        /* --- 9. Responsive Design --- */
+        @media (min-width: 768px) {
+            .nav-links { display: flex; }
+            .hamburger { display: none; }
+            .editor-grid { grid-template-columns: repeat(2, 1fr); grid-template-areas: "editor preview"; }
+            .editor-column { grid-area: editor; }
+            .preview-column { grid-area: preview; }
+        }
+        @media (min-width: 1024px) {
+            .editor-grid { grid-template-columns: 2fr 1.5fr 1fr; grid-template-areas: "editor preview suggestions"; }
+            .suggestions-column { grid-area: suggestions; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="main-header" id="main-header">
+        <div class="container">
+            <nav class="main-nav">
+                <a href="#" class="logo">Prompt<span class="accent">Smith</span></a>
+                <ul class="nav-links" id="desktop-nav-links">
+                    <li><a href="#hero" class="active">Home</a></li>
+                    <li><a href="#editor-section">Editor</a></li>
+                    <li><a data-action="open-templates">Templates</a></li>
+                    <li><a>About</a></li>
+                </ul>
+                <button class="hamburger" id="hamburger-menu" aria-label="Open menu">
+                    <svg class="hamburger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu glass-panel" id="mobile-menu">
+        <ul class="nav-links" id="mobile-nav-links">
+            <li><a href="#hero" class="active">Home</a></li>
+            <li><a href="#editor-section">Editor</a></li>
+            <li><a data-action="open-templates">Templates</a></li>
+            <li><a>About</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container">
+        <section id="hero">
+            <div class="hero-content">
+                <h1>Craft Prompts <span class="accent">Like a Pro</span></h1>
+                <p>Design smarter AI prompts in seconds with visual guidance and a library of expert examples.</p>
+                <a href="#editor-section" class="cta-button" id="get-started-btn">Get Started →</a>
+            </div>
+            <svg class="floating-image" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#00E6E6" d="M48.1,-63.3C61.4,-53.4,70.6,-37.9,75.1,-21.3C79.7,-4.7,79.6,13.1,72.4,27.8C65.2,42.5,50.9,54.1,35.5,62.8C20.1,71.5,3.6,77.3,-12.8,75.3C-29.2,73.3,-45.5,63.5,-57.8,49.8C-70,36.1,-78.2,18.1,-77.8,0.5C-77.4,-17,-68.4,-34,-55.9,-45.7C-43.4,-57.4,-27.4,-63.7,-11.4,-65.9C4.6,-68.1,20.6,-66.1,34.8,-66.1C38.8,-66.1,43.4,-68.1,48.1,-63.3Z" transform="translate(100 100)" />
+                <path fill="#FF8C42" d="M42.8,-43.1C55.9,-33.5,67.3,-16.7,67.7,0.4C68.1,17.5,57.5,35,43.3,47.2C29.1,59.4,11.3,66.4,-6,67.2C-23.4,68,-40.7,62.7,-51.7,50.7C-62.7,38.7,-67.4,20,-65.4,3.5C-63.4,-13,-54.6,-27.3,-43.3,-36.8C-32,-46.3,-18.2,-51,-2.9,-49.5C12.4,-48,29.7,-52.7,42.8,-43.1Z" transform="translate(90 110) scale(0.8)" style="mix-blend-mode: screen; opacity: 0.7;"/>
+            </svg>
+        </section>
+
+        <section id="editor-section" class="hidden">
+            <div class="editor-grid">
+                <div class="editor-column" id="editor-column"></div>
+                <div class="preview-column">
+                    <div class="prompt-component glass-panel" id="live-preview-box">
+                        <header><h3>Live Prompt Preview</h3></header>
+                        <pre id="preview-content">Your prompt will appear here...</pre>
+                        <div class="export-buttons">
+                           <button class="component-actions-button" id="copy-btn">Copy</button>
+                           <button class="component-actions-button" id="download-btn">Download .txt</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="suggestions-column">
+                     <div class="prompt-component glass-panel" id="suggestions-box">
+                        <header><h3><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width:20px; height:20px; vertical-align: middle; margin-right: 0.5rem; color: var(--accent2);"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-5.5-2.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0ZM10 12a.75.75 0 0 0-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 0 0 .75-.75v-.008a.75.75 0 0 0-.75-.75H10Z" clip-rule="evenodd" /></svg>Guidance</h3></header>
+                        <div id="suggestions-content"><p>Click the info icon <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width:16px; height:16px; display:inline; vertical-align: middle; color: var(--accent1);"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" /></svg> on any component to get tips.</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Prompt Library Modal -->
+    <div id="templates-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Prompt Library</h2>
+                <button class="close-modal-btn" data-action="close-templates">×</button>
+            </div>
+            <div class="prompt-library" id="prompt-library-list">
+                <!-- Prompt cards will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (() => {
+        // --- 1. DOM Element Selection ---
+        const getStartedBtn = document.getElementById('get-started-btn');
+        const heroSection = document.getElementById('hero');
+        const editorSection = document.getElementById('editor-section');
+        const editorColumn = document.getElementById('editor-column');
+        const previewContent = document.getElementById('preview-content');
+        const suggestionsContent = document.getElementById('suggestions-content');
+        const copyBtn = document.getElementById('copy-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const mainHeader = document.getElementById('main-header');
+        const hamburgerMenu = document.getElementById('hamburger-menu');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const templatesModal = document.getElementById('templates-modal');
+        const promptLibraryList = document.getElementById('prompt-library-list');
+
+        // --- 2. Data & State Management ---
+        let promptState = {};
+
+        const componentData = {
+            role: { title: 'Role or Perspective', placeholder: 'e.g., Act as a world-class advertising copywriter.', added: false },
+            objective: { title: 'Clear Objective', placeholder: 'e.g., Generate three creative marketing slogans for a new brand of coffee.', added: false },
+            context: { title: 'Context & Background', placeholder: 'e.g., The coffee is organic, sourced from Ethiopia, and targeted at young professionals.', added: false },
+            instructions: { title: 'Specific Instructions', placeholder: 'e.g., The slogans should be short (under 10 words), witty, and convey a sense of energy.', added: false },
+            examples: { title: 'Examples (What to do/avoid)', placeholder: 'e.g., GOOD: "Fuel your hustle." BAD: "Our coffee is brown."', added: false },
+            format: { title: 'Output Format', placeholder: 'e.g., Present the slogans as a numbered list.', added: false },
+            constraints: { title: 'Constraints & Limitations', placeholder: 'e.g., Word count must be under 10 words. Do not use the word "java".', added: false },
+            quality: { title: 'Quality Criteria', placeholder: 'e.g., A good response will be memorable, unique, and align with a modern, ambitious brand identity.', added: false },
+        };
+        
+        const suggestionsData = {
+            role: '<h4>Role or Perspective</h4><p>Assigning a role like "Act as a senior software engineer" or "You are a travel guide specializing in Italy" frames the AI\'s knowledge and dramatically improves response quality.</p>',
+            objective: '<h4>Clear Objective</h4><p>Be specific! Instead of "write about dogs," try "write a 200-word blog post about the benefits of adopting a rescue dog, in a friendly and informative tone."</p>',
+            context: '<h4>Context & Background</h4><p>Give the AI the "why." Providing background helps it tailor the response. Mention the audience, the situation, or any relevant history.</p>',
+            instructions: '<h4>Specific Instructions</h4><p>Break down your request into clear steps. Use action verbs like "Analyze," "Summarize," "Compare," or "Generate."</p>',
+            examples: '<h4>Examples</h4><p>Show, don\'t just tell. Providing both a good example (what you want) and a bad example (what to avoid) is one of the most effective ways to guide the AI.</p>',
+            format: '<h4>Output Format</h4><p>Don\'t leave the structure to chance. Specify if you want bullet points, a JSON object, a Markdown table, or simple paragraphs. This saves a lot of reformatting time.</p>',
+            constraints: '<h4>Constraints & Limitations</h4><p>Define the boundaries. Specifying what the AI *should not* do, or setting limits like word count, helps to focus the output and prevent irrelevant information.</p>',
+            quality: '<h4>Quality Criteria</h4><p>Explain what a "good" answer looks like to you. Mentioning criteria like "be persuasive," "cite sources," or "maintain a neutral tone" helps the AI self-evaluate its response.</p>',
+        };
+        
+        const promptLibrary = [
+            {
+                title: 'Marketing Email Campaign',
+                category: 'Business & Marketing',
+                description: 'Generate a sequence of three emails to re-engage customers who have not purchased in the last 90 days.',
+                components: {
+                    role: 'Act as an expert email marketer specializing in e-commerce customer retention.',
+                    objective: 'Write a 3-email sequence to re-engage lapsed customers and encourage a new purchase.',
+                    context: 'The target audience is customers of an online store selling eco-friendly home goods. They have not made a purchase in over 90 days. We want to win them back without being pushy.',
+                    instructions: 'Email 1: A gentle "We miss you" with a friendly update on new products. No discount. Email 2 (3 days later): Offer a small, time-sensitive "welcome back" discount (e.g., 15% off). Email 3 (5 days later): A final reminder about the expiring discount, highlighting best-selling products.',
+                    constraints: 'Each email should be under 150 words. The tone should be warm, personal, and helpful, not aggressive.',
+                    format: 'Provide the output as three distinct sections, each with a clear subject line and body text. Use Markdown for formatting.'
+                }
+            },
+            {
+                title: 'Python Code Explainer',
+                category: 'Technical',
+                description: 'Explain a complex Python function line-by-line for a junior developer.',
+                components: {
+                    role: 'You are a senior Python developer and a patient mentor.',
+                    objective: 'Explain the provided Python code snippet in a way that a junior developer can easily understand.',
+                    context: 'The code snippet is a list comprehension with a conditional statement. The junior developer is familiar with basic loops but not this more advanced syntax.',
+                    instructions: '1. First, show the equivalent code using a standard for-loop. 2. Then, break down the list comprehension syntax piece by piece: the output expression, the loop, and the conditional. 3. Explain the performance benefits of using a list comprehension.',
+                    format: 'Structure the explanation with clear headings: "Equivalent For-Loop", "List Comprehension Breakdown", and "Performance Benefits". Use Markdown code blocks for all code examples.'
+                }
+            },
+            {
+                title: 'Creative Story Starter',
+                category: 'Creative Writing',
+                description: 'Generate an intriguing opening paragraph for a science-fiction mystery story.',
+                components: {
+                    role: 'Act as a seasoned science-fiction author known for atmospheric and mysterious storytelling.',
+                    objective: 'Write the opening paragraph (around 100-150 words) for a new sci-fi noir story.',
+                    context: 'The story is set in a rain-slicked, neon-lit city on a terraformed Mars in the year 2242. The protagonist is a cynical private detective.',
+                    instructions: 'The paragraph should establish the setting, introduce the detective\'s mood, and present a strange, seemingly impossible event that kicks off the mystery.',
+                    quality: 'A great response will use vivid sensory details (smell of ozone, sound of rain on chrome) and create a strong sense of suspense.'
+                }
+            },
+            {
+                title: 'Social Media Content Plan',
+                category: 'Business & Marketing',
+                description: 'Create a one-week content plan for an Instagram account.',
+                components: {
+                    role: 'You are a social media strategist for a direct-to-consumer brand.',
+                    objective: 'Generate a 7-day content plan for the Instagram account of a company that sells high-quality, minimalist watches.',
+                    context: 'The brand\'s values are precision, minimalism, and timeless style. The target audience is design-conscious millennials.',
+                    instructions: 'For each day (Monday-Sunday), provide a content idea, a suggested visual (e.g., "Flatlay," "Lifestyle shot"), and a draft caption with relevant hashtags.',
+                    format: 'Output the plan as a Markdown table with columns: Day, Content Idea, Visual Type, Draft Caption & Hashtags.'
+                }
+            },
+            {
+                title: 'Meal Plan Generator',
+                category: 'Productivity',
+                description: 'Create a healthy and balanced 3-day meal plan based on dietary preferences.',
+                components: {
+                    role: 'You are a certified nutritionist and meal planning expert.',
+                    objective: 'Create a balanced 3-day meal plan (Breakfast, Lunch, Dinner) that is easy to prepare.',
+                    constraints: 'The plan must be vegetarian, low-carb, and gluten-free. Each day should total approximately 1800 calories.',
+                    instructions: 'For each meal, provide the meal name and a brief list of key ingredients. Focus on whole foods and simple recipes.',
+                    format: 'Organize the output by day (Day 1, Day 2, Day 3), with nested bullet points for Breakfast, Lunch, and Dinner.'
+                }
+            },
+            // ... Adding more prompts to reach 20
+            { title: 'Job Description Writer', category: 'Business & HR', description: 'Draft a compelling job description for a Senior UX Designer.', components: { role: 'You are an experienced tech recruiter.', objective: 'Write a job description for a Senior UX Designer position.', context: 'The company is a fast-growing SaaS startup in the project management space. The culture is collaborative and remote-first.', instructions: 'Include sections for: Responsibilities, Required Qualifications, and Preferred Qualifications. Emphasize the impact the role will have on the product.', format: 'Use clear headings with bullet points for each section.'} },
+            { title: 'API Documentation Explainer', category: 'Technical', description: 'Explain a specific API endpoint.', components: { role: 'You are a technical writer creating developer documentation.', objective: 'Explain the `/users/{id}` GET endpoint of a fictional API.', context: 'This endpoint retrieves user information.', instructions: 'Describe the purpose of the endpoint, the required path parameter (`id`), possible success (200 OK) and error (404 Not Found) responses.', format: 'Provide a sample request (using curl) and sample JSON responses for both success and error cases.'} },
+            { title: 'Personalized Workout Plan', category: 'Productivity', description: 'Create a 3-day/week gym workout plan.', components: { role: 'You are a certified personal trainer.', objective: 'Create a 3-day full-body workout plan for an intermediate-level gym-goer aiming for muscle hypertrophy.', context: 'The user has access to a standard gym with free weights and machines.', instructions: 'Structure the plan for Day 1, Day 2, and Day 3. For each day, list 5-6 exercises, specifying sets, reps (e.g., 3 sets of 8-12 reps), and rest periods.', format: 'Use a clear, organized list format.'} },
+            { title: 'Brainstorming Business Ideas', category: 'Business & Marketing', description: 'Generate innovative business ideas combining two industries.', components: { role: 'You are an innovative entrepreneur and business strategist.', objective: 'Brainstorm 5 unique business ideas that combine the fitness industry with technology.', instructions: 'For each idea, provide a one-sentence concept and a brief explanation of the target market and potential revenue model.', format: 'Use a numbered list for the 5 ideas.'} },
+            { title: 'Poem Generator', category: 'Creative Writing', description: 'Write a short poem in the style of a specific poet.', components: { role: 'Act as the poet Emily Dickinson.', objective: 'Write a short, four-stanza poem about the changing of seasons from autumn to winter.', instructions: 'Use characteristic Dickinson style: slant rhymes, unconventional capitalization, and dashes. Focus on themes of nature, time, and solitude.', format: 'Four short stanzas.'} },
+            { title: 'Travel Itinerary Planner', category: 'Productivity', description: 'Plan a detailed 5-day trip to Tokyo.', components: { role: 'You are an expert travel agent specializing in Japan.', objective: 'Create a 5-day itinerary for a first-time visitor to Tokyo who is interested in a mix of modern culture, food, and history.', context: 'The traveler is on a moderate budget.', instructions: 'For each day, suggest a primary neighborhood to explore, 2-3 specific activities or sights, and a recommendation for a type of food to try (e.g., "Try ramen in Shinjuku").', format: 'Organize the itinerary by Day 1, Day 2, etc.'} },
+            { title: 'Code Debugger', category: 'Technical', description: 'Identify and fix a bug in a JavaScript snippet.', components: { role: 'You are a meticulous JavaScript developer and debugger.', objective: 'Find and fix the bug in the provided JavaScript code that is supposed to calculate the sum of an array of numbers.', context: 'The provided code has a common off-by-one error in the loop.', instructions: '1. Identify the bug in the original code. 2. Explain why it is a bug. 3. Provide the corrected, working code.', format: 'Use three sections: "The Bug", "Explanation", and "Corrected Code".'} },
+            { title: 'Product Naming', category: 'Business & Marketing', description: 'Brainstorm names for a new tech product.', components: { role: 'You are a branding expert specializing in product naming.', objective: 'Generate 10 potential names for a new productivity app that helps users manage their tasks and time.', context: 'The app is designed to be simple, intuitive, and calming. The target audience values focus and clarity.', instructions: 'The names should be short, memorable, and easy to spell. They can be real words, compound words, or clever made-up words.', format: 'A numbered list of 10 names.'} },
+            { title: 'Complex Topic Simplifier', category: 'Productivity', description: 'Explain a complex scientific concept simply.', components: { role: 'You are a science communicator like Carl Sagan or Neil deGrasse Tyson.', objective: 'Explain the concept of "quantum entanglement" to a 14-year-old.', instructions: 'Use a simple analogy to explain the core idea. Avoid jargon as much as possible. Keep the entire explanation under 250 words.', quality: 'A great answer will be accurate but highly accessible and spark curiosity.'} },
+            { title: 'Speech Writer', category: 'Creative Writing', description: 'Write a short, inspiring speech.', components: { role: 'You are a professional speechwriter.', objective: 'Write a 2-minute motivational speech for a graduating class of university students.', context: 'The theme is "embracing uncertainty and finding your own path."', instructions: 'The speech should have a clear opening, a core message with a short anecdote or metaphor, and a memorable closing statement.', format: 'A single block of text, approximately 300 words.'} },
+            { title: 'SQL Query Generator', category: 'Technical', description: 'Write an SQL query to retrieve specific data.', components: { role: 'You are a senior database analyst.', objective: 'Write an SQL query to find all customers who have spent more than $1000 in total.', context: 'You have two tables: `customers` (with `customer_id`, `name`) and `orders` (with `order_id`, `customer_id`, `amount`).', instructions: 'The query should join the two tables, group the results by customer, and filter for those with a total order amount greater than 1000.', format: 'Provide the complete SQL query in a code block.'} },
+            { title: 'Recipe Creator', category: 'Creative Writing', description: 'Create a unique recipe based on a set of ingredients.', components: { role: 'You are a creative chef and recipe developer.', objective: 'Create a simple, delicious recipe for a main course using the following ingredients: chicken thighs, lemons, rosemary, garlic, and potatoes.', instructions: 'Provide a list of ingredients, step-by-step instructions for preparation and cooking, and suggest a cooking time and temperature.', format: 'Use sections for "Ingredients" and "Instructions".'} },
+            { title: 'Resume Bullet Point Enhancer', category: 'Productivity', description: 'Improve a resume bullet point to be more impactful.', components: { role: 'You are a professional career coach and resume writer.', objective: 'Rewrite the following resume bullet point to be more quantitative and results-oriented: "Managed the company\'s social media accounts."', context: 'The user worked at a B2C startup and was responsible for Instagram and Twitter.', instructions: 'Incorporate action verbs and metrics. A good revision will showcase growth, engagement, or a specific successful campaign.', format: 'Provide a "Before" and "After" version for clear comparison.'} },
+            { title: 'Summarize Text', category: 'Productivity', description: 'Summarize a long article into key bullet points.', components: { objective: 'Summarize the provided text into five key bullet points.', context: 'The text is a news article about recent advances in renewable energy technology.', instructions: 'Each bullet point should capture a main idea or significant finding from the article. The summary should be concise and easy to read.', format: 'A numbered list of five bullet points.'} },
+            { title: 'Argumentative Essay Outline', category: 'Creative Writing', description: 'Create an outline for an argumentative essay.', components: { role: 'You are a university-level academic writing tutor.', objective: 'Create a 5-paragraph essay outline for the topic: "Should remote work be the new standard for office jobs?"', instructions: 'The outline should include: 1. Introduction with a clear thesis statement. 2. Body Paragraph 1 (Pro-remote work). 3. Body Paragraph 2 (Potential drawbacks of remote work). 4. Body Paragraph 3 (Rebuttal/Solution). 5. Conclusion.', format: 'Use a hierarchical list format for the outline.'} }
+        ];
+
+        // --- 3. Core Functions ---
+        function updatePreview() {
+            let fullPrompt = "";
+            const order = ['role', 'objective', 'context', 'instructions', 'examples', 'format', 'constraints', 'quality'];
+            order.forEach(key => {
+                if (promptState[key] && promptState[key].trim() !== "") {
+                    fullPrompt += `### ${componentData[key].title}\n${promptState[key]}\n\n`;
+                }
+            });
+            previewContent.innerHTML = fullPrompt.trim() === "" ? "Your prompt will appear here..." : fullPrompt.trim();
+        }
+
+        function saveState() {
+            localStorage.setItem('promptSmithState', JSON.stringify(promptState));
+        }
+
+
+
+        function loadState() {
+            const savedState = localStorage.getItem('promptSmithState');
+            if (savedState) {
+                promptState = JSON.parse(savedState);
+                Object.keys(promptState).forEach(key => {
+                    if (promptState[key]) {
+                        componentData[key].added = true;
+                    }
+                });
+                renderEditor();
+            } else {
+                // Start with a clean slate, only objective is visible
+                promptState = { objective: '' };
+                componentData.objective.added = true;
+                renderEditor();
+            }
+        }
+        
+        function renderEditor() {
+            editorColumn.innerHTML = ''; // Clear current editor
+            
+            const componentsToShow = Object.keys(componentData).filter(key => componentData[key].added);
+            
+            componentsToShow.forEach((key, index) => {
+                const component = componentData[key];
+                const value = promptState[key] || '';
+                
+                const element = document.createElement('div');
+                element.className = 'prompt-component glass-panel';
+                element.style.animationDelay = `${index * 50}ms`;
+                element.innerHTML = `
+                    <header>
+                        <h3>${component.title}</h3>
+                        <button class="info-button" data-key="${key}" aria-label="Show info for ${component.title}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </header>
+                    <textarea class="component-input" data-key="${key}" placeholder="${component.placeholder}">${value}</textarea>
+                `;
+                editorColumn.appendChild(element);
+            });
+            
+            // Add the action buttons at the end
+            const actionContainer = document.createElement('div');
+            actionContainer.className = 'prompt-component glass-panel component-actions-container';
+            actionContainer.innerHTML = `
+                <header><h3>Add Components</h3></header>
+                <div class="component-actions">
+                    ${Object.keys(componentData).filter(key => !componentData[key].added).map(key => 
+                        `<button data-action="add" data-key="${key}">${componentData[key].title}</button>`
+                    ).join('')}
+                </div>
+            `;
+            editorColumn.appendChild(actionContainer);
+            
+            updatePreview();
+        }
+
+        function populateLibrary() {
+            promptLibraryList.innerHTML = '';
+            promptLibrary.forEach((prompt, index) => {
+                const card = document.createElement('div');
+                card.className = 'prompt-card';
+                card.innerHTML = `
+                    <h4>${prompt.title}</h4>
+                    <p>${prompt.description}</p>
+                    <button class="use-prompt-btn" data-index="${index}">Use this Prompt</button>
+                `;
+                promptLibraryList.appendChild(card);
+            });
+        }
+        
+        function loadPromptFromLibrary(index) {
+            const promptTemplate = promptLibrary[index];
+            if (!promptTemplate) return;
+
+            // Reset state
+            promptState = {};
+            Object.keys(componentData).forEach(key => componentData[key].added = false);
+
+            // Load new state from template
+            for (const [key, value] of Object.entries(promptTemplate.components)) {
+                if (componentData[key]) {
+                    promptState[key] = value;
+                    componentData[key].added = true;
+                }
+            }
+            
+            showEditor();
+            renderEditor();
+            saveState();
+            templatesModal.classList.add('hidden');
+        }
+        
+        function showEditor() {
+            heroSection.classList.add('hidden');
+            editorSection.classList.remove('hidden');
+            window.scrollTo({ top: editorSection.offsetTop - 100, behavior: 'smooth' });
+        }
+
+        // --- 4. Event Listeners ---
+        getStartedBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showEditor();
+        });
+
+        editorColumn.addEventListener('input', (e) => {
+            if (e.target.matches('.component-input')) {
+                promptState[e.target.dataset.key] = e.target.value;
+                updatePreview();
+                saveState();
+            }
+        });
+
+        editorColumn.addEventListener('click', (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+            
+            if (target.dataset.action === 'add') {
+                const key = target.dataset.key;
+                componentData[key].added = true;
+                promptState[key] = '';
+                renderEditor();
+            } else if (target.classList.contains('info-button')) {
+                const key = target.dataset.key;
+                suggestionsContent.innerHTML = suggestionsData[key] || '<p>No guidance available for this component.</p>';
+            }
+        });
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(previewContent.innerText).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+            });
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const blob = new Blob([previewContent.innerText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'promptsmith_prompt.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        window.addEventListener('scroll', () => {
+            mainHeader.classList.toggle('scrolled', window.scrollY > 50);
+        });
+        
+        hamburgerMenu.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+
+        // Modal Listeners
+        function toggleModal(action) {
+            if (action === 'open-templates') {
+                templatesModal.classList.remove('hidden');
+            } else if (action === 'close-templates') {
+                templatesModal.classList.add('hidden');
+            }
+            mobileMenu.classList.remove('open');
+        }
+
+        document.getElementById('desktop-nav-links').addEventListener('click', (e) => {
+            if (e.target.dataset.action) toggleModal(e.target.dataset.action);
+        });
+        document.getElementById('mobile-nav-links').addEventListener('click', (e) => {
+            if (e.target.dataset.action) toggleModal(e.target.dataset.action);
+        });
+        templatesModal.addEventListener('click', (e) => {
+            if (e.target.dataset.action === 'close-templates' || e.target.id === 'templates-modal') {
+                toggleModal('close-templates');
+            }
+        });
+        promptLibraryList.addEventListener('click', e => {
+            if(e.target.matches('.use-prompt-btn')) {
+                loadPromptFromLibrary(e.target.dataset.index);
+            }
+        });
+
+        // --- 5. Initialization ---
+        loadState();
+        populateLibrary();
+    })();
+    </script>
+</body>
+</html>
